@@ -1,0 +1,118 @@
+---
+title: "Modeling"
+output: github_document
+---
+
+```{r load packages, results = "hide"}
+library(dplyr)
+library(ggplot2)
+library(knitr)
+library(corrplot)
+library(stargazer)
+```
+
+# Correlation Plot
+## load processed data
+```{r load data}
+crime_data <- read.csv('../data/processed/crime_v2.csv')
+```
+
+```{r}
+crime_cols <- crime_data[c('crime_rate', 'pr_arrest', 'pr_conviction', 'pr_sentence', 'pr_punishment', 'pr_conviction_over_offenses',
+                           'avg_sentence', 'police_per_capita',
+                           'population_density', 'tax_per_capita', 'is_west', 'is_central', 'is_urban', 'pct_minority',
+                           'w_construction', 'w_tuc', 'w_sales', 'w_fin', 'w_service', 'w_manu', 'w_fed', 'w_state', 'w_local_gov',
+                           'offense_mix', 'pct_young_male', 'avg_wage')]
+
+crime_cols_cor = cor(crime_cols)
+corrplot(crime_cols_cor, type = "upper", tl.col = "black", tl.srt = 45, tl.cex = 0.7)
+```
+
+
+# Building models
+
+### model 1 - hypothesis is that tax per capita (as a proxy for income inequality) is causal of higher crime rates.
+```{r}
+model1 <- lm(crime_rate ~ tax_per_capita , data=crime_data)
+summary(model1)
+```
+### model 2 - adding covariates that may have impact on tax per capita and crime rate
+```{r}
+model2 <- lm(crime_rate ~ tax_per_capita + population_density + pct_young_male, data=crime_data)
+
+### model 1 - hypothesis is that tax per capita (as a proxy for income inequality) is causal of higher crime rates.
+```{r}
+model1 <- lm(crime_rate ~ tax_per_capita , data=crime_data)
+summary(model1)
+```
+### model 2 - adding covariates that may have impact on tax per capita and crime rate
+```{r}
+model2 <- lm(crime_rate ~ tax_per_capita + population_density + pct_young_male, data=crime_data)
+summary(model2)
+```
+
+```{r}
+AIC(model1)
+AIC(model2)
+```
+A lower AIC represents a better fit, meaning that model 2 has a better fit than model 1
+
+### put model results together
+```{r, results='asis'}
+library(stargazer)
+stargazer(model1, model2, type = 'text',
+          report = "vc", # Don't report errors, since we haven't covered them
+          title = "Linear Models Predicting Crime Rate",
+          keep.stat = c("rsq", "n"),
+          omit.table.layout = "n") # Omit more output related to errors
+```
+
+### what if we add interaction term for urban environment?
+```{r}
+model2a <- lm(crime_rate ~ tax_per_capita* is_urban + population_density + pct_young_male, data=crime_data)
+
+### what if we add interaction term for urban environment?
+```{r}
+model2a <- lm(crime_rate ~ tax_per_capita* is_urban + population_density + pct_young_male, data=crime_data)
+summary(model2a)
+```
+
+### put model results together
+```{r, results='asis'}
+stargazer(model1, model2, model2a, type = 'text',
+          report = "vc", # Don't report errors, since we haven't covered them
+          title = "Linear Models Predicting Crime Rate",
+          keep.stat = c("rsq", "n"),
+          omit.table.layout = "n") # Omit more output related to errors
+```
+
+```{r}
+AIC(model1)
+AIC(model2)
+AIC(model2a)
+```
+
+
+### model 3 - transforming variable for interpretability
+```{r}
+model3 <- lm(crime_rate ~ log(tax_per_capita) + population_density + pct_young_male, data=crime_data)
+summary(model3)
+```
+```{r}
+AIC(model1)
+AIC(model2)
+AIC(model3)
+```
+
+```{r, results='asis'}
+stargazer(model1, model2, model3, type = 'text',
+          report = "vc", # Don't report errors, since we haven't covered them
+          title = "Linear Models Predicting Crime Rate",
+          keep.stat = c("rsq", "n"),
+          omit.table.layout = "n") # Omit more output related to errors
+```
+
+police per capita cannot be added to the regression - it's highly correlated with pr_arrest, meaning that the more police per capita, the higher probability of arrest.
+
+### The idea is, holding other covariates constant, or keep other covariates fixed, how much will changing the policy decrease the crime rate.
+### * outcome variable always go to the left. For example, the police per capita could be an outcome of the crime rate - the higher the crime rate is, the more police force were invested. In this case, the police per capita is a better predictor of crime rate
