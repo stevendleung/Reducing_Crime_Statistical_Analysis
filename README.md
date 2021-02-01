@@ -1,6 +1,8 @@
 Reducing Crime- A Statistical Analysis
 ================ 
 
+In this study we analyze the causal elements on crime in the dataset below and determine recommendations based on a statistical regression analysis.
+
     ├── README.md          <- The top-level README for developers using this project.
     ├── data
     │   ├── interim        <- Intermediate data that has been transformed.
